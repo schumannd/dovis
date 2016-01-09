@@ -11,6 +11,7 @@ fn main() {
         start_y: 3,
         end_x: 95,
         end_y: 95,
+        player: (3.0, 3.0),
         field: Vec::new(),
     };
 

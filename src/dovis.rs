@@ -4,6 +4,11 @@ extern crate glium;
 
 use std::process;
 
+// For sane key events:
+use glium::glutin::Event::KeyboardInput;
+use glium::glutin::ElementState::{ Pressed, Released };
+use glium::glutin::VirtualKeyCode::*;
+
 
 pub struct MyBlock {
 	destroyable: bool,
@@ -48,6 +53,7 @@ pub struct MyLevel {
 	pub start_y: usize,
 	pub end_x: usize,
 	pub end_y: usize,
+	pub player: (f32, f32),
 	pub field: Vec<Vec<usize>>,
 }
 
@@ -107,11 +113,21 @@ impl MyLevel {
 		for x in 1..self.field.len() - 1 {
 			image.push(Vec::<(f32, f32, f32, f32)>::new());
 			for y in 1..self.field[0].len() - 1 {
-				let gray_scale = self.field[x][y] as f32;
-				image[x - 1 as usize].push((gray_scale, gray_scale, gray_scale, 1.0));
+				image[x - 1 as usize].push(self.translate_pixel(self.field[x][y]));
 			}
 		}
 		return image;
+	}
+
+	fn translate_pixel(&self, pixel_value : usize) -> (f32, f32, f32, f32) {
+		match pixel_value{
+			1 => (1.0, 1.0, 1.0, 1.0),
+			0 => (0.0, 0.0, 0.0, 1.0),
+			2 => (1.0, 0.0, 0.0, 1.0),
+			3 => (0.0, 1.0, 0.0, 1.0),
+			4 => (0.0, 0.0, 1.0, 1.0),
+			_ => (1.0, 1.0, 1.0, 1.0)
+		}
 	}
 }
 
@@ -182,18 +198,29 @@ impl Game {
 	}
 
 	pub fn game_loop(&mut self) {
-        // Do game logic:
-        // TODO
-        self.level.field[self.level.start_x][self.level.start_y] = 1;
+		let mut x_change : f32 = 0.;
+		let mut y_change : f32 = 0.;
 
-        self.glium_shit();
+        self.level.field[self.level.end_x][self.level.end_y] = 4;
 
         for ev in self.display.poll_events() {
             match ev {
                 glium::glutin::Event::Closed => process::exit(0),
+                KeyboardInput(Pressed, _, Some(Left)) => x_change -= 1.,
+                KeyboardInput(Pressed, _, Some(Right)) => x_change += 1.,
+                KeyboardInput(Pressed, _, Some(Up)) => y_change += 1.,
+                KeyboardInput(Pressed, _, Some(Down)) => y_change -= 1.,
                 _ => ()
             }
         }
+
+        self.level.player.0 += y_change;
+        self.level.player.1 += x_change;
+
+
+        self.level.field[self.level.player.0.floor() as usize][self.level.player.1.floor() as usize] = 1;
+
+        self.glium_shit();
 	}
 
 	fn glium_shit(&mut self){
