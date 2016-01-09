@@ -1,0 +1,9 @@
+[package]
+name = "dovis"
+version = "0.1.0"
+authors = ["David Schumann <david.schumann@student.hpi.com>"]
+
+[dependencies]
+glium="*"
+rand="*"
+ovisbp={git="https://github.com/lanice/ovisbp"}
