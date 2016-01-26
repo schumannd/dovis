@@ -23,27 +23,26 @@ impl ovisbp::Block for MyBlock {
 
 pub struct MyField {
 	pub x: u32,
-	pub y: u32,
-	// block: MyBlock,
+	pub y: u32, 
+	pub block: Option<MyBlock>,
 }
 
-// impl ovisbp::Field for MyField {
-// 	fn empty(&self) -> bool{
-// 		match self.block {
-// 			Some(_) => true,
-// 			None => false
+impl ovisbp::Field for MyField {
+	fn empty(&self) -> bool{
+		match self.block {
+			Some(_) => true,
+			None => false
+		}
+	}
 
-// 		}
-// 	}
+	fn block(&self) -> Option<&ovisbp::Block>{
+		match self.block {
+			Some(ref the_block) => Some(the_block),
+			None => None
 
-// 	fn block(&self) -> Option<&ovisbp::Block>{
-// 		match self.block {
-// 			Some(_) => Some(&self.block),
-// 			None => None
-
-// 		}
-// 	}
-// }
+		}
+	}
+}
 
 
 pub struct MyLevel {
@@ -83,12 +82,15 @@ impl ovisbp::Level for MyLevel {
 	/// Returns the height (in fields) of a jump 'seconds' after
 	/// it started
 	fn jump_height(&self, seconds: f32) -> f32{
-		0f32 // TODO
+		if seconds <= 3f32{
+			return 3f32 - seconds
+		}
+		return 0f32
 	}
 
 	/// Returns the walking speed of a player in fields per second.
 	fn player_velocity(&self) -> f32{
-		0f32 // TODO
+		1f32
 	}
 }
 
@@ -213,11 +215,13 @@ impl Game {
                 _ => ()
             }
         }
+        // reset old position
+        self.level.field[self.level.player.0.floor() as usize][self.level.player.1.floor() as usize] = 0;
 
         self.level.player.0 += y_change;
         self.level.player.1 += x_change;
 
-
+        // set new position
         self.level.field[self.level.player.0.floor() as usize][self.level.player.1.floor() as usize] = 1;
 
         self.glium_shit();
