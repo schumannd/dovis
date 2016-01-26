@@ -33,8 +33,8 @@ pub struct MyField {
 impl ovisbp::Field for MyField {
 	fn empty(&self) -> bool{
 		match self.block {
-			Some(_) => true,
-			None => false
+			Some(_) => false,
+			None => true
 		}
 	}
 
@@ -87,10 +87,10 @@ impl ovisbp::Level for MyLevel {
 	/// Returns the height (in fields) of a jump 'seconds' after
 	/// it started
 	fn jump_height(&self, seconds: f32) -> f32{
-		if seconds <= 3f32{
-			return 3f32 - seconds
-		}
-		return 0f32
+		let highest_points_after_sec = 1.0;
+		let max_height = 3.;
+		let gravity = 2.;
+		return -((seconds - highest_points_after_sec).powf( gravity )) + max_height;
 	}
 
 	/// Returns the walking speed of a player in fields per second.
@@ -147,10 +147,16 @@ struct Vertex {
     position: [f32; 2]
 }
 
+pub struct Player{
+	pub loc: (f32, f32),
+	pub jumping: bool,
+	pub airtime: f32,
+}
+
 
 pub struct Game{
 	pub level: MyLevel,
-	pub player: (f32, f32),
+	pub player: Player,
 
 	// Glium stuff
 	display: glium::backend::glutin_backend::GlutinFacade,
@@ -196,8 +202,15 @@ impl Game {
 		let vertex_buffer = glium::VertexBuffer::new(&display, &vertices).unwrap();
 
 		let program = glium::Program::from_source(&display, vertex_shader, fragement_shader, None).unwrap();
+
+		let player = Player{
+			loc: (lvl.start_position().0 as f32, lvl.start_position().1 as f32),
+			jumping: false,
+			airtime: 0.,
+		};
+
 		Game{
-			player: (lvl.start_position().0 as f32, lvl.start_position().1 as f32),
+			player: player,
 			level: lvl,
 			display: display,
 			vertex_buffer: vertex_buffer,
@@ -206,30 +219,56 @@ impl Game {
 	}
 
 	pub fn game_loop(&mut self) {
-		let mut x_change : f32 = 0.;
-		let mut y_change : f32 = 0.;
 		let player_velocity = self.level.player_velocity();
+		let mut x_change : f32 = 0.;
+		let mut wants_to_jump = false;
 
         for ev in self.display.poll_events() {
             match ev {
                 glium::glutin::Event::Closed => process::exit(0),
                 KeyboardInput(Pressed, _, Some(Left)) => x_change -= player_velocity,
                 KeyboardInput(Pressed, _, Some(Right)) => x_change += player_velocity,
-                KeyboardInput(Pressed, _, Some(Up)) => y_change += player_velocity,
-                KeyboardInput(Pressed, _, Some(Down)) => y_change -= player_velocity,
+                KeyboardInput(Pressed, _, Some(Up)) => wants_to_jump = true,
                 _ => ()
             }
         }
-        // reset old position
-        // self.level.fields[self.level.player.0.floor() as usize][self.level.player.1.floor() as usize].block.destroyable = 0;
 
-        self.player.0 += y_change;
-        self.player.1 += x_change;
+        self.handle_jumps(wants_to_jump);
 
-        // set new position
-        // self.level.fields[self.level.player.0.floor() as usize][self.level.player.1.floor() as usize] = 1;
+
+        self.player.loc.1 += x_change;
 
         self.glium_shit();
+	}
+
+	fn handle_jumps(&mut self, wants_to_jump : bool){
+		let mut y_change : f32 = 0.;
+
+		// We are in the air. So calculate if we are going up or down.
+		if self.level.fields[self.player.loc.0 as usize][(self.player.loc.1 - 1.) as usize].empty() {
+			if self.player.jumping {
+				y_change = self.level.jump_height(self.player.airtime) - self.level.jump_height(self.player.airtime - 0.1);
+			}
+			else{
+				y_change = -1.;
+			}
+        	self.player.airtime += 0.1;
+
+		}
+		// We are on the ground, so lets check if we want to jump.
+		else{
+			self.player.airtime = 0.;
+			self.player.jumping = false;
+			self.player.loc.0 = self.player.loc.0.floor();
+			if wants_to_jump {
+				self.player.airtime = 0.1;
+				self.player.jumping = true;
+				y_change = self.level.jump_height(self.player.airtime);
+			}
+		}
+		// let new_loc_y = self.player.loc.0 + y_change;
+
+        self.player.loc.0 += y_change;
 	}
 
 	fn glium_shit(&mut self){
@@ -261,15 +300,15 @@ impl Game {
 			}
 		}
 
-		image[self.player.0 as usize][self.player.1 as usize] = (1.0, 0.0, 0.0, 1.0);
+		image[self.player.loc.0 as usize][self.player.loc.1 as usize] = (1.0, 0.0, 0.0, 1.0);
 
 		return image;
 	}
 
 	fn translate_pixel(&self, field : &MyField) -> (f32, f32, f32, f32) {
 		match field.empty() {
-			true => (1.0, 1.0, 1.0, 1.0),
-			false => (0.0, 0.0, 0.0, 1.0),
+			true => (0.0, 0.0, 0.0, 1.0),
+			false => (1.0, 1.0, 1.0, 1.0),
 		}
 	}
 

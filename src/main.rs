@@ -3,6 +3,9 @@ extern crate glium;
 
 mod dovis;
 
+use std::thread;
+
+
 fn main() {
     let lvl = dovis::MyLevel::new();
 
@@ -10,5 +13,6 @@ fn main() {
 
     loop {
         game.game_loop();
+        thread::sleep_ms(20);
     }
 }
