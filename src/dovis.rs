@@ -10,6 +10,9 @@ use glium::glutin::ElementState::{ Pressed, Released };
 use glium::glutin::VirtualKeyCode::*;
 
 
+use dovis::ovisbp::*;
+
+
 pub struct MyBlock {
 	destroyable: bool,
 }
@@ -22,8 +25,8 @@ impl ovisbp::Block for MyBlock {
 
 
 pub struct MyField {
-	pub x: u32,
-	pub y: u32, 
+	pub x: usize,
+	pub y: usize, 
 	pub block: Option<MyBlock>,
 }
 
@@ -46,14 +49,14 @@ impl ovisbp::Field for MyField {
 
 
 pub struct MyLevel {
-	pub width: usize,
-	pub height: usize,
-	pub start_x: usize,
-	pub start_y: usize,
-	pub end_x: usize,
-	pub end_y: usize,
+	width: usize,
+	height: usize,
+	start_x: usize,
+	start_y: usize,
+	end_x: usize,
+	end_y: usize,
 	pub player: (f32, f32),
-	pub field: Vec<Vec<usize>>,
+	pub fields: Vec<Vec<MyField>>,
 }
 
 impl ovisbp::Level for MyLevel {
@@ -65,10 +68,13 @@ impl ovisbp::Level for MyLevel {
 	}
 
 	fn field(&self, x: usize, y: usize) -> Option<&ovisbp::Field>{
-		None // TODO
+		return Some(&self.fields[x][y])
 	}
 	fn set_field(&self, x: usize, y: usize) -> bool{
-		false // TODO
+		match self.fields[x][y].block{
+			Some(ref the_block) => false,
+			None => true,  // Shits not working yo. Fix your interfaces
+		}
 	}
 
 	fn start_position(&self) -> (usize, usize){
@@ -96,40 +102,40 @@ impl ovisbp::Level for MyLevel {
 
 
 impl MyLevel {
+
+	pub fn new() -> MyLevel{
+		let mut level = MyLevel{
+			width: 100,
+			height: 100,
+			start_x: 3,
+			start_y: 3,
+			end_x: 95,
+			end_y: 95,
+			player: (3.0, 3.0),
+			fields: Vec::new(),
+		};
+		level.init();
+		return level;
+	}
+
 	pub fn init(&mut self){
+
+		// Init vector with visible borders.
 	    for x in 0..self.width {
-	        self.field.push(Vec::new());
+	        self.fields.push(Vec::new());
 	        for y in 0..self.height {
 	            if x == 1 || y == 1 || x == self.width - 2 || y == self.height - 2 {
-	                self.field[x].push(1);
+	                self.fields[x].push(MyField{x : x, y : y, block : Some(MyBlock{destroyable : false})});
 	            }else{
-	                self.field[x].push(0);
+	                self.fields[x].push(MyField{x : x, y : y, block : None});
 	            }
 	            
 	        }
 	    }
-	}
-	pub fn grid_to_image(&self) -> Vec<Vec<(f32, f32, f32, f32)>> {
-		let mut image = Vec::<Vec<(f32, f32, f32, f32)>>::new();
 
-		for x in 1..self.field.len() - 1 {
-			image.push(Vec::<(f32, f32, f32, f32)>::new());
-			for y in 1..self.field[0].len() - 1 {
-				image[x - 1 as usize].push(self.translate_pixel(self.field[x][y]));
-			}
-		}
-		return image;
-	}
+		self.set_field(self.end_x, self.end_y);
 
-	fn translate_pixel(&self, pixel_value : usize) -> (f32, f32, f32, f32) {
-		match pixel_value{
-			1 => (1.0, 1.0, 1.0, 1.0),
-			0 => (0.0, 0.0, 0.0, 1.0),
-			2 => (1.0, 0.0, 0.0, 1.0),
-			3 => (0.0, 1.0, 0.0, 1.0),
-			4 => (0.0, 0.0, 1.0, 1.0),
-			_ => (1.0, 1.0, 1.0, 1.0)
-		}
+
 	}
 }
 
@@ -203,8 +209,6 @@ impl Game {
 		let mut x_change : f32 = 0.;
 		let mut y_change : f32 = 0.;
 
-        self.level.field[self.level.end_x][self.level.end_y] = 4;
-
         for ev in self.display.poll_events() {
             match ev {
                 glium::glutin::Event::Closed => process::exit(0),
@@ -216,13 +220,13 @@ impl Game {
             }
         }
         // reset old position
-        self.level.field[self.level.player.0.floor() as usize][self.level.player.1.floor() as usize] = 0;
+        // self.level.fields[self.level.player.0.floor() as usize][self.level.player.1.floor() as usize].block.destroyable = 0;
 
         self.level.player.0 += y_change;
         self.level.player.1 += x_change;
 
         // set new position
-        self.level.field[self.level.player.0.floor() as usize][self.level.player.1.floor() as usize] = 1;
+        // self.level.fields[self.level.player.0.floor() as usize][self.level.player.1.floor() as usize] = 1;
 
         self.glium_shit();
 	}
@@ -231,7 +235,7 @@ impl Game {
 
         let mut target = self.display.draw();
 
-        let texture = glium::texture::Texture2d::new(&self.display, self.level.grid_to_image()).unwrap();
+        let texture = glium::texture::Texture2d::new(&self.display, self.grid_to_image()).unwrap();
         let sampler = glium::uniforms::Sampler::new(&texture)
             .minify_filter(glium::uniforms::MinifySamplerFilter::Nearest)
             .magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest);
@@ -244,6 +248,25 @@ impl Game {
         target.draw(&self.vertex_buffer, &no_indices, &self.program, &uniforms, &Default::default()).unwrap();
         target.finish().unwrap();
 
+	}
+
+	fn grid_to_image(&self) -> Vec<Vec<(f32, f32, f32, f32)>> {
+		let mut image = Vec::<Vec<(f32, f32, f32, f32)>>::new();
+
+		for x in 1..self.level.fields.len() - 1 {
+			image.push(Vec::<(f32, f32, f32, f32)>::new());
+			for y in 1..self.level.fields[0].len() - 1 {
+				image[x - 1 as usize].push(self.translate_pixel(&self.level.fields[x][y]));
+			}
+		}
+		return image;
+	}
+
+	fn translate_pixel(&self, field : &MyField) -> (f32, f32, f32, f32) {
+		match field.empty() {
+			true => (1.0, 1.0, 1.0, 1.0),
+			false => (0.0, 0.0, 0.0, 1.0),
+		}
 	}
 
 
