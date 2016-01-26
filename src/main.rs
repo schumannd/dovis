@@ -4,7 +4,7 @@ extern crate glium;
 mod dovis;
 
 fn main() {
-    let mut lvl = dovis::MyLevel::new();
+    let lvl = dovis::MyLevel::new();
 
     let mut game = dovis::Game::new(lvl);
 

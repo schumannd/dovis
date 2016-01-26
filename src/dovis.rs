@@ -6,7 +6,7 @@ use std::process;
 
 // For sane key events:
 use glium::glutin::Event::KeyboardInput;
-use glium::glutin::ElementState::{ Pressed, Released };
+use glium::glutin::ElementState::{ Pressed };
 use glium::glutin::VirtualKeyCode::*;
 
 
@@ -55,7 +55,6 @@ pub struct MyLevel {
 	start_y: usize,
 	end_x: usize,
 	end_y: usize,
-	pub player: (f32, f32),
 	pub fields: Vec<Vec<MyField>>,
 }
 
@@ -111,7 +110,6 @@ impl MyLevel {
 			start_y: 3,
 			end_x: 95,
 			end_y: 95,
-			player: (3.0, 3.0),
 			fields: Vec::new(),
 		};
 		level.init();
@@ -152,8 +150,10 @@ struct Vertex {
 
 pub struct Game{
 	pub level: MyLevel,
+	pub player: (f32, f32),
+
+	// Glium stuff
 	display: glium::backend::glutin_backend::GlutinFacade,
-	vertices: Vec<Vertex>,
 	vertex_buffer: glium::VertexBuffer<Vertex>,
 	program: glium::Program,
 
@@ -197,9 +197,9 @@ impl Game {
 
 		let program = glium::Program::from_source(&display, vertex_shader, fragement_shader, None).unwrap();
 		Game{
+			player: (lvl.start_position().0 as f32, lvl.start_position().1 as f32),
 			level: lvl,
 			display: display,
-			vertices: vertices,
 			vertex_buffer: vertex_buffer,
 			program: program,
 		}
@@ -208,22 +208,23 @@ impl Game {
 	pub fn game_loop(&mut self) {
 		let mut x_change : f32 = 0.;
 		let mut y_change : f32 = 0.;
+		let player_velocity = self.level.player_velocity();
 
         for ev in self.display.poll_events() {
             match ev {
                 glium::glutin::Event::Closed => process::exit(0),
-                KeyboardInput(Pressed, _, Some(Left)) => x_change -= 1.,
-                KeyboardInput(Pressed, _, Some(Right)) => x_change += 1.,
-                KeyboardInput(Pressed, _, Some(Up)) => y_change += 1.,
-                KeyboardInput(Pressed, _, Some(Down)) => y_change -= 1.,
+                KeyboardInput(Pressed, _, Some(Left)) => x_change -= player_velocity,
+                KeyboardInput(Pressed, _, Some(Right)) => x_change += player_velocity,
+                KeyboardInput(Pressed, _, Some(Up)) => y_change += player_velocity,
+                KeyboardInput(Pressed, _, Some(Down)) => y_change -= player_velocity,
                 _ => ()
             }
         }
         // reset old position
         // self.level.fields[self.level.player.0.floor() as usize][self.level.player.1.floor() as usize].block.destroyable = 0;
 
-        self.level.player.0 += y_change;
-        self.level.player.1 += x_change;
+        self.player.0 += y_change;
+        self.player.1 += x_change;
 
         // set new position
         // self.level.fields[self.level.player.0.floor() as usize][self.level.player.1.floor() as usize] = 1;
@@ -259,6 +260,9 @@ impl Game {
 				image[x - 1 as usize].push(self.translate_pixel(&self.level.fields[x][y]));
 			}
 		}
+
+		image[self.player.0 as usize][self.player.1 as usize] = (1.0, 0.0, 0.0, 1.0);
+
 		return image;
 	}
 
