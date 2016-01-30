@@ -38,7 +38,7 @@ impl ovisbp::Field for MyField {
 		}
 	}
 
-	fn block(&self) -> Option<&ovisbp::Block>{
+	fn block(&self) -> Option<&ovisbp::Block> {
 		match self.block {
 			Some(ref the_block) => Some(the_block),
 			None => None
@@ -59,34 +59,34 @@ pub struct MyLevel {
 }
 
 impl ovisbp::Level for MyLevel {
-	fn width(&self) -> usize{
+	fn width(&self) -> usize {
 		self.width
 	}
-	fn height(&self) -> usize{
+	fn height(&self) -> usize {
 		self.width
 	}
 
-	fn field(&self, x: usize, y: usize) -> Option<&ovisbp::Field>{
+	fn field(&self, x: usize, y: usize) -> Option<&ovisbp::Field> {
 		return Some(&self.fields[x][y])
 	}
-	fn set_field(&self, x: usize, y: usize) -> bool{
+	fn set_field(&self, x: usize, y: usize) -> bool {
 		match self.fields[x][y].block{
 			Some(ref the_block) => false,
 			None => true,  // Shits not working yo. Fix your interfaces
 		}
 	}
 
-	fn start_position(&self) -> (usize, usize){
+	fn start_position(&self) -> (usize, usize) {
 		return (self.start_x, self.start_y)
 	}
 
-	fn goal_position(&self) -> (usize, usize){
+	fn goal_position(&self) -> (usize, usize) {
 		return (self.end_x, self.end_y)
 	}
 
 	/// Returns the height (in fields) of a jump 'seconds' after
 	/// it started
-	fn jump_height(&self, seconds: f32) -> f32{
+	fn jump_height(&self, seconds: f32) -> f32 {
 		let highest_points_after_sec = 1.0;
 		let max_height = 3.;
 		let gravity = 2.;
@@ -94,7 +94,7 @@ impl ovisbp::Level for MyLevel {
 	}
 
 	/// Returns the walking speed of a player in fields per second.
-	fn player_velocity(&self) -> f32{
+	fn player_velocity(&self) -> f32 {
 		1f32
 	}
 }
@@ -102,12 +102,12 @@ impl ovisbp::Level for MyLevel {
 
 impl MyLevel {
 
-	pub fn new() -> MyLevel{
-		let mut level = MyLevel{
+	pub fn new() -> MyLevel {
+		let mut level = MyLevel {
 			width: 100,
 			height: 100,
-			start_x: 3,
-			start_y: 3,
+			start_x: 1,
+			start_y: 1,
 			end_x: 95,
 			end_y: 95,
 			fields: Vec::new(),
@@ -116,15 +116,16 @@ impl MyLevel {
 		return level;
 	}
 
-	pub fn init(&mut self){
+	pub fn init(&mut self) {
 
 		// Init vector with visible borders.
 	    for x in 0..self.width {
 	        self.fields.push(Vec::new());
 	        for y in 0..self.height {
-	            if x == 1 || y == 1 || x == self.width - 2 || y == self.height - 2 {
+	            if x == 0 || y == 0 || x == self.width - 1 || y == self.height - 1 {
 	                self.fields[x].push(MyField{x : x, y : y, block : Some(MyBlock{destroyable : false})});
-	            }else{
+	            }
+	            else {
 	                self.fields[x].push(MyField{x : x, y : y, block : None});
 	            }
 	            
@@ -132,6 +133,9 @@ impl MyLevel {
 	    }
 
 		self.set_field(self.end_x, self.end_y);
+
+		self.fields[3][10] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
+		self.fields[10][3] = MyField{x : 10, y : 3, block : Some(MyBlock{destroyable : false})};
 
 
 	}
@@ -147,14 +151,14 @@ struct Vertex {
     position: [f32; 2]
 }
 
-pub struct Player{
+pub struct Player {
 	pub loc: (f32, f32),
 	pub jumping: bool,
 	pub airtime: f32,
 }
 
 
-pub struct Game{
+pub struct Game {
 	pub level: MyLevel,
 	pub player: Player,
 
@@ -169,7 +173,7 @@ pub struct Game{
 implement_vertex!(Vertex, position);
 
 impl Game {
-	pub fn new(lvl : MyLevel) -> Game{
+	pub fn new(lvl : MyLevel) -> Game {
 
 		// shaders
 		let vertex_shader = r#"
@@ -203,13 +207,13 @@ impl Game {
 
 		let program = glium::Program::from_source(&display, vertex_shader, fragement_shader, None).unwrap();
 
-		let player = Player{
+		let player = Player {
 			loc: (lvl.start_position().0 as f32, lvl.start_position().1 as f32),
 			jumping: false,
 			airtime: 0.,
 		};
 
-		Game{
+		Game {
 			player: player,
 			level: lvl,
 			display: display,
@@ -235,28 +239,27 @@ impl Game {
 
         self.handle_jumps(wants_to_jump);
 
-
-        self.player.loc.1 += x_change;
+        self.handle_walk(x_change);
 
         self.glium_shit();
 	}
 
-	fn handle_jumps(&mut self, wants_to_jump : bool){
+	fn handle_jumps(&mut self, wants_to_jump : bool) {
 		let mut y_change : f32 = 0.;
 
 		// We are in the air. So calculate if we are going up or down.
-		if self.level.fields[self.player.loc.0 as usize][(self.player.loc.1 - 1.) as usize].empty() {
+		if self.level.fields[(self.player.loc.0 - 1.) as usize][self.player.loc.1 as usize].empty() {
 			if self.player.jumping {
 				y_change = self.level.jump_height(self.player.airtime) - self.level.jump_height(self.player.airtime - 0.1);
 			}
-			else{
+			else {
 				y_change = -1.;
 			}
         	self.player.airtime += 0.1;
 
 		}
 		// We are on the ground, so lets check if we want to jump.
-		else{
+		else {
 			self.player.airtime = 0.;
 			self.player.jumping = false;
 			self.player.loc.0 = self.player.loc.0.floor();
@@ -271,7 +274,14 @@ impl Game {
         self.player.loc.0 += y_change;
 	}
 
-	fn glium_shit(&mut self){
+	fn handle_walk(&mut self, x_change : f32){
+		if x_change == 1. && self.level.fields[self.player.loc.0 as usize][(self.player.loc.1 + 1.) as usize].empty() ||
+		   x_change == -1. && self.level.fields[self.player.loc.0 as usize][(self.player.loc.1 - 1.) as usize].empty(){
+			self.player.loc.1 += x_change;
+		}
+	}
+
+	fn glium_shit(&mut self) {
 
         let mut target = self.display.draw();
 
@@ -293,10 +303,10 @@ impl Game {
 	fn grid_to_image(&self) -> Vec<Vec<(f32, f32, f32, f32)>> {
 		let mut image = Vec::<Vec<(f32, f32, f32, f32)>>::new();
 
-		for x in 1..self.level.fields.len() - 1 {
+		for x in 0..self.level.fields.len() {
 			image.push(Vec::<(f32, f32, f32, f32)>::new());
-			for y in 1..self.level.fields[0].len() - 1 {
-				image[x - 1 as usize].push(self.translate_pixel(&self.level.fields[x][y]));
+			for y in 0..self.level.fields[0].len() {
+				image[x].push(self.translate_pixel(&self.level.fields[x][y]));
 			}
 		}
 
