@@ -25,8 +25,6 @@ impl ovisbp::Block for MyBlock {
 
 
 pub struct MyField {
-	pub x: usize,
-	pub y: usize, 
 	pub block: Option<MyBlock>,
 }
 
@@ -123,10 +121,10 @@ impl MyLevel {
 	        self.fields.push(Vec::new());
 	        for y in 0..self.height {
 	            if x == 0 || y == 0 || x == self.width - 1 || y == self.height - 1 {
-	                self.fields[x].push(MyField{x : x, y : y, block : Some(MyBlock{destroyable : false})});
+	                self.fields[x].push(MyField{ block : Some(MyBlock{destroyable : false}) });
 	            }
 	            else {
-	                self.fields[x].push(MyField{x : x, y : y, block : None});
+	                self.fields[x].push(MyField{ block : None });
 	            }
 	            
 	        }
@@ -134,19 +132,19 @@ impl MyLevel {
 
 		self.set_field(self.end_x, self.end_y);
 
-		self.fields[3][3] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
-		self.fields[5][6] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
-		self.fields[7][9] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
-		self.fields[9][12] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
-		self.fields[11][15] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
-		self.fields[13][18] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
-		self.fields[15][21] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
-		self.fields[17][24] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
-		self.fields[19][27] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
-		self.fields[19][27] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
-		self.fields[22][28] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
-		self.fields[24][26] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
-		self.fields[24][25] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
+		self.fields[3][3] = MyField{block : Some(MyBlock{destroyable : false})};
+		self.fields[5][6] = MyField{block : Some(MyBlock{destroyable : false})};
+		self.fields[7][9] = MyField{block : Some(MyBlock{destroyable : false})};
+		self.fields[9][12] = MyField{block : Some(MyBlock{destroyable : false})};
+		self.fields[11][15] = MyField{block : Some(MyBlock{destroyable : false})};
+		self.fields[13][18] = MyField{block : Some(MyBlock{destroyable : false})};
+		self.fields[15][21] = MyField{block : Some(MyBlock{destroyable : false})};
+		self.fields[17][24] = MyField{block : Some(MyBlock{destroyable : false})};
+		self.fields[19][27] = MyField{block : Some(MyBlock{destroyable : false})};
+		self.fields[19][27] = MyField{block : Some(MyBlock{destroyable : false})};
+		self.fields[22][28] = MyField{block : Some(MyBlock{destroyable : false})};
+		self.fields[24][26] = MyField{block : Some(MyBlock{destroyable : false})};
+		self.fields[24][25] = MyField{block : Some(MyBlock{destroyable : false})};
 
 
 	}
@@ -297,6 +295,7 @@ impl Game {
 	fn check_win(&self) {
 		if self.player.loc.0 as usize == self.level.end_x &&
 		   self.player.loc.1 as usize == self.level.end_y {
+		   	println!("\nYOU WIN!!!\n");
 		   	process::exit(0)
 		}
 	}
