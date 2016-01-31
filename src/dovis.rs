@@ -104,12 +104,12 @@ impl MyLevel {
 
 	pub fn new() -> MyLevel {
 		let mut level = MyLevel {
-			width: 100,
-			height: 100,
+			width: 30,
+			height: 30,
 			start_x: 1,
 			start_y: 1,
-			end_x: 95,
-			end_y: 95,
+			end_x: 25,
+			end_y: 25,
 			fields: Vec::new(),
 		};
 		level.init();
@@ -134,8 +134,19 @@ impl MyLevel {
 
 		self.set_field(self.end_x, self.end_y);
 
-		self.fields[3][10] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
-		self.fields[10][3] = MyField{x : 10, y : 3, block : Some(MyBlock{destroyable : false})};
+		self.fields[3][3] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
+		self.fields[5][6] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
+		self.fields[7][9] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
+		self.fields[9][12] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
+		self.fields[11][15] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
+		self.fields[13][18] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
+		self.fields[15][21] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
+		self.fields[17][24] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
+		self.fields[19][27] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
+		self.fields[19][27] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
+		self.fields[22][28] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
+		self.fields[24][26] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
+		self.fields[24][25] = MyField{x : 3, y : 10, block : Some(MyBlock{destroyable : false})};
 
 
 	}
@@ -241,6 +252,8 @@ impl Game {
 
         self.handle_walk(x_change);
 
+        self.check_win();
+
         self.glium_shit();
 	}
 
@@ -281,6 +294,13 @@ impl Game {
 		}
 	}
 
+	fn check_win(&self) {
+		if self.player.loc.0 as usize == self.level.end_x &&
+		   self.player.loc.1 as usize == self.level.end_y {
+		   	process::exit(0)
+		}
+	}
+
 	fn glium_shit(&mut self) {
 
         let mut target = self.display.draw();
@@ -311,6 +331,7 @@ impl Game {
 		}
 
 		image[self.player.loc.0 as usize][self.player.loc.1 as usize] = (1.0, 0.0, 0.0, 1.0);
+		image[self.level.end_y][self.level.end_y] = (0.0, 1.0, 0.0, 1.0);
 
 		return image;
 	}
